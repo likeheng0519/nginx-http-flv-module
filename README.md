@@ -10,19 +10,29 @@ Donate if you like this module. Many thanks to you!
 
 <a href="https://www.buymeacoffee.com/winshining" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/white_img.png" alt="Buy Me A Coffee" style="height: 41px !important;width: 174px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
 
+### Appreciation
+
+* Igor Sysoev, the creator of [NGINX](http://nginx.org).
+
+* Roman Arutyunyan, who created [nginx-rtmp-module](https://github.com/arut/nginx-rtmp-module).
+
+* Contributors, refer to [AUTHORS](https://github.com/winshining/nginx-http-flv-module/blob/master/AUTHORS) for details.
+
 # Features
 
 * All features [nginx-rtmp-module](https://github.com/arut/nginx-rtmp-module) provides.
 
 * Other features provided by nginx-http-flv-module vs [nginx-rtmp-module](https://github.com/arut/nginx-rtmp-module):
 
-|         Features        | nginx-http-flv-module | nginx-rtmp-module |                   remarks                  |
-| :---------------------: | :-------------------: | :---------------: | :----------------------------------------: |
-|   HTTP-FLV (subscribe)  |           √           |         x         |  HTTPS-FLV and chunked response supported  | 
-|        GOP cache        |           √           |         x         |     Only for H.264 video and AAC audio     |
-|          VHOST          |           √           |         x         |                                            |
-| omit `listen` directive |           √           |         x         |                                            |
-|     JSON style stat     |           √           |         x         |                                            |
+|         Features        | nginx-http-flv-module | nginx-rtmp-module |                     Remarks                     |
+| :---------------------: | :-------------------: | :---------------: | :---------------------------------------------: |
+|   HTTP-FLV (subscribe)  |           √           |         x         |     HTTPS-FLV and chunked response supported    | 
+|        GOP cache        |           √           |         x         |        Only for H.264 video and AAC audio       |
+|          VHOST          |           √           |         x         |                                                 |
+| Omit `listen` directive |           √           |    See remarks    |  There MUST be at least one `listen` directive  |
+|   Audio-only support    |           √           |    See remarks    |  Won't work if `wait_video` or `wait_key` is on |
+|  Timing log for access  |           √           |         x         |                                                 |
+|     JSON style stat     |           √           |         x         |                                                 |
 
 # Systems supported
 
@@ -40,13 +50,13 @@ Donate if you like this module. Many thanks to you!
 
 * GNU make for activating compiler on Unix-like systems to compile software.
 
-* GCC for compiling on Unix-like systems/MSVC for compiling on Windows.
+* GCC for compilation on Unix-like systems or MSVC for compilation on Windows.
 
-* GDB for debuging on Unix-like systems.
+* GDB for debug on Unix-like systems.
 
-* FFmpeg for publishing media streams.
+* [FFmpeg](http://ffmpeg.org) or [OBS](https://obsproject.com) for publishing media streams.
 
-* VLC player (recommended) for playing media streams.
+* [VLC](http://www.videolan.org) (recommended) or [flv.js](https://github.com/Bilibili/flv.js) (recommended) for playing media streams.
 
 * PCRE for NGINX if regular expressions needed.
 
@@ -62,7 +72,7 @@ nginx-http-flv-module has all features that [nginx-rtmp-module](https://github.c
 
 ## On Windows
 
-Build steps please refer to [Building nginx on the Win32 platform with Visual C](http://nginx.org/en/docs/howto_build_on_win32.html), and don't forget to add `--add-module=/path/to/nginx-http-flv-module` in `Run configure script` step.
+For details of build steps, please refer to [Building nginx on the Win32 platform with Visual C](http://nginx.org/en/docs/howto_build_on_win32.html), and don't forget to add `--add-module=/path/to/nginx-http-flv-module` in `Run configure script` step.
 
 ## On Unix-like systems
 
@@ -92,7 +102,7 @@ If the module is compiled as a dynamic module, the [NGINX](http://nginx.org) ver
 
 # Usage
 
-For details about usages of [nginx-rtmp-module](https://github.com/arut/nginx-rtmp-module), please refer to [README.md](https://github.com/arut/nginx-rtmp-module/blob/master/README.md).
+For details of usages of [nginx-rtmp-module](https://github.com/arut/nginx-rtmp-module), please refer to [README.md](https://github.com/arut/nginx-rtmp-module/blob/master/README.md).
 
 ## Publish
 
@@ -111,6 +121,10 @@ The **default port for RTMP** is **1935**, if some other ports were used, `:port
 ### via HTTP-FLV
 
     http://example.com[:port]/dir?[port=xxx&]app=myapp&stream=mystream
+
+### Note
+
+If [ffplay](http://www.ffmpeg.org/ffplay.html) is used in command line to play the stream, the url above **MUST** be enclosed by quotation marks, or arguments in url will be discarded (some shells not so smart will interpret "&" as "run in background").
 
 The `dir` is used to match location blocks in http block (see below for details).
 
@@ -192,7 +206,7 @@ Please refer to [nginx-http-flv-module-packages](https://github.com/winshining/n
 
 The directives `rtmp_auto_push`, `rtmp_auto_push_reconnect` and `rtmp_socket_dir` will not function on Windows except on Windows 10 17063 and later versions, because `relay` in multiple processes mode needs help of Unix domain socket, please refer to [Unix domain socket on Windows 10](https://blogs.msdn.microsoft.com/commandline/2017/12/19/af_unix-comes-to-windows) for details.
 
-The directive `worker_processes` of value 1 is preferable to other values, because there are something wrong with `ngx_rtmp_stat_module` and `ngx_rtmp_control_module` in multi-processes mode, in addtion, `vhost` feature is not perfect in multi-processes mode yet.
+The directive `worker_processes` of value 1 is preferable to other values, because there are something wrong with `ngx_rtmp_stat_module` and `ngx_rtmp_control_module` in multi-processes mode, in addtion, `vhost` feature is not perfect in multi-processes mode yet, wating to be fixed.
 
     worker_processes  1; #should be 1 for Windows, for it doesn't support Unix domain socket
     #worker_processes  auto; #from versions 1.3.8 and 1.2.5
@@ -206,6 +220,7 @@ The directive `worker_processes` of value 1 is preferable to other values, becau
     #to RTMP are needed, the command below MUST be specified and MUST be
     #located before events directive, otherwise the module won't be loaded
     #or will be loaded unsuccessfully when NGINX is started
+
     #load_module modules/ngx_http_flv_live_module.so;
 
     events {
@@ -284,10 +299,14 @@ The directive `worker_processes` of value 1 is preferable to other values, becau
     rtmp_socket_dir /tmp;
 
     rtmp {
-        out_queue   4096;
-        out_cork    8;
-        max_streams 128;
-        timeout     15s;
+        out_queue           4096;
+        out_cork            8;
+        max_streams         128;
+        timeout             15s;
+        drop_idle_publisher 15s;
+
+        log_interval 5s; #interval used by log module to log in access.log, it is very useful for debug
+        log_size     1m; #buffer size used by log module to log in access.log
 
         server {
             listen 1935;

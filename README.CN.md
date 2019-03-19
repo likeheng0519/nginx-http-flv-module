@@ -10,19 +10,29 @@
 
 ![reward_qrcode_winshining](https://raw.githubusercontent.com/wiki/winshining/nginx-http-flv-module/reward_qrcode_winshining.png)
 
+### 感谢
+
+* Igor Sysoev，[NGINX](http://nginx.org)的作者。
+
+* Roman Arutyunyan，[nginx-rtmp-module](https://github.com/arut/nginx-rtmp-module)的作者。
+
+* 贡献者，详情见[AUTHORS](https://github.com/winshining/nginx-http-flv-module/blob/master/AUTHORS)。
+
 # 功能
 
 * [nginx-rtmp-module](https://github.com/arut/nginx-rtmp-module)提供的所有功能。
 
 * nginx-http-flv-module的其他功能与[nginx-rtmp-module](https://github.com/arut/nginx-rtmp-module)的对比：
 
-|       功能       | nginx-http-flv-module | nginx-rtmp-module |             备注             |
-| :--------------: | :-------------------: | :---------------: | :--------------------------: |
-| HTTP-FLV (播放)  |           √           |         x         |  支持HTTPS-FLV和chunked回复  | 
-|     GOP缓存      |           √           |         x         |  仅适用于H.264视频和AAC音频  |
-|     虚拟主机     |           √           |         x         |                              |
-| 省略`listen`配置 |           √           |         x         |                              |
-|  JSON风格的stat  |           √           |         x         |                              |
+|       功能       | nginx-http-flv-module | nginx-rtmp-module |                  备注                  |
+| :--------------: | :-------------------: | :---------------: | :------------------------------------: |
+| HTTP-FLV (播放)  |           √           |         x         |        支持HTTPS-FLV和chunked回复      | 
+|     GOP缓存      |           √           |         x         |        仅适用于H.264视频和AAC音频      |
+|     虚拟主机     |           √           |         x         |                                        |
+| 省略`listen`配置 |           √           |       见备注      |        配置中必须有一个`listen`        |
+|    纯音频支持    |           √           |       见备注      | `wait_video`或`wait_key`开启后无法工作 |
+| 定时打印访问记录 |           √           |         x         |                                        |
+|  JSON风格的stat  |           √           |         x         |                                        |
 
 # 支持的系统
 
@@ -34,19 +44,19 @@
 
 ## 注意
 
-[flv.js](https://github/com/Bilibili/flv.js)只能运行在支持[Media Source Extensions](https://www.w3.org/TR/media-source)的浏览器上。
+[flv.js](https://github.com/Bilibili/flv.js)只能运行在支持[Media Source Extensions](https://www.w3.org/TR/media-source)的浏览器上。
 
 # 依赖
 
 * 在类Unix系统上，需要GNU make，用于调用编译器来编译软件。
 
-* 在类Unix系统上，需要GCC/在Windows上，需要MSVC，用于编译软件。
+* 在类Unix系统上，需要GCC。或者在Windows上，需要MSVC，用于编译软件。
 
 * 在类Unix系统上，需要GDB，用于调试软件（可选）。
 
-* FFmpeg，用于发布媒体流。
+* [FFmpeg](http://ffmpeg.org)或者[OBS](https://obsproject.com)，用于发布媒体流。
 
-* VLC播放器（推荐），用于播放媒体流。
+* [VLC](http://www.videolan.org)（推荐）或者[flv.js](https://github.com/Bilibili/flv.js)（推荐），用于播放媒体流。
 
 * 如果NGINX要支持正则表达式，需要PCRE库。
 
@@ -111,6 +121,10 @@ nginx-http-flv-module包含了[nginx-rtmp-module](https://github.com/arut/nginx-
 ### HTTP-FLV方式
 
     http://example.com[:port]/dir?[port=xxx&]app=myapp&stream=mystream
+
+### 注意
+
+如果使用[ffplay](http://www.ffmpeg.org/ffplay.html)命令行方式播放流，那么**必须**为上述的url加上引号，否则url中的参数会被丢弃（有些不太智能的shell会把"&"解释为"后台运行"）。
 
 参数`dir`用于匹配http配置块中的location块（更多详情见下文）。
 
@@ -192,7 +206,7 @@ nginx-http-flv-module包含了[nginx-rtmp-module](https://github.com/arut/nginx-
 
 配置项`rtmp_auto_push`，`rtmp_auto_push_reconnect`和`rtmp_socket_dir`在Windows上不起作用，除了Windows 10 17063以及后续版本之外，因为多进程模式的`relay`需要Unix domain socket的支持，详情请参考[Unix domain socket on Windows 10](https://blogs.msdn.microsoft.com/commandline/2017/12/19/af_unix-comes-to-windows)。
 
-最好将配置项`worker_processes`设置为1，因为`ngx_rtmp_stat_module`和`ngx_rtmp_control_module`在多进程模式下有问题，另外，`vhost`功能在多进程模式下也不能完全正确运行。
+最好将配置项`worker_processes`设置为1，因为`ngx_rtmp_stat_module`和`ngx_rtmp_control_module`在多进程模式下有问题，另外，`vhost`功能在多进程模式下还不能完全正确运行，等待修复。
 
     worker_processes  1; #运行在Windows上时，设置为1，因为Windows不支持Unix domain socket
     #worker_processes  auto; #1.3.8和1.2.5以及之后的版本
@@ -205,6 +219,7 @@ nginx-http-flv-module包含了[nginx-rtmp-module](https://github.com/arut/nginx-
     #如果此模块被编译为动态模块并且要使用与RTMP相关的功
     #能时，必须指定下面的配置项并且它必须位于events配置
     #项之前，否则NGINX启动时不会加载此模块或者加载失败
+
     #load_module modules/ngx_http_flv_live_module.so;
 
     events {
@@ -283,10 +298,14 @@ nginx-http-flv-module包含了[nginx-rtmp-module](https://github.com/arut/nginx-
     rtmp_socket_dir /tmp;
 
     rtmp {
-        out_queue   4096;
-        out_cork    8;
-        max_streams 128;
-        timeout     15s;
+        out_queue           4096;
+        out_cork            8;
+        max_streams         128;
+        timeout             15s;
+        drop_idle_publisher 15s;
+
+        log_interval 5s; #log模块在access.log中记录日志的间隔时间，对调试非常有用
+        log_size     1m; #log模块用来记录日志的缓冲区大小
 
         server {
             listen 1935;
